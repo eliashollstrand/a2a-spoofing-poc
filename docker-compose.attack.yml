@@ -1,0 +1,33 @@
+services:
+  legit-server:
+    build: ./legit-server
+    networks:
+      labnet:
+        ipv4_address: 172.30.0.2  # The real server, but after spoofing DNS no longer points here
+
+  evil-server:
+    build: ./evil-server
+    networks:
+      labnet:
+        ipv4_address: 172.30.0.3 # The attacker's server
+
+  evil-dns:
+    build: ./evil-dns
+    environment:
+      SPOOF_IP: "172.30.0.3" # Tell the DNS to point the domain at evil-server
+    networks:
+      labnet:
+        ipv4_address: 172.30.0.4
+
+  client:
+    build: ./client
+    depends_on: [legit-server, evil-server, evil-dns]
+    dns: ["172.30.0.4"]  # The victim uses the attacker's DNS-server
+    restart: "no"
+    networks: [labnet]
+
+networks:
+  labnet:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

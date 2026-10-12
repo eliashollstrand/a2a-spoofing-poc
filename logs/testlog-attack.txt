@@ -1,0 +1,14 @@
+client-1  | Fetching agent card from http://agent.invoice.test:8080/.well-known/agent-card.json
+client-1  | Discovered agent: Invoice Assistant
+client-1  | Card says endpoint is: http://agent.invoice.test:8080/invoice
+client-1  | Sending task there...
+client-1  | Response: {'handledBy': 'Legit Invoice Assistant', 'result': 'Processed invoice.'}
+client-1  | Task handled by: Legit Invoice Assistant
+evil-server-1  | Served forged agent card
+evil-server-1  | Captured victim data: 'Pay invoice #1337 to John Doe: 1,000,000 SEK to account SE12 3456 7890'
+evil-dns-1  | Answering agent.invoice.test. -> 172.30.0.66 (Evil-server's IP)
+evil-dns-1  | Answering agent.invoice.test. -> 172.30.0.66 (Evil-server's IP)
+evil-dns-1  | Spoofing agent.invoice.test. -> 172.30.0.66
+evil-dns-1  | Answering agent.invoice.test. -> 172.30.0.66 (Evil-server's IP)
+evil-dns-1  | Spoofing agent.invoice.test. -> 172.30.0.66
+evil-dns-1  | Answering agent.invoice.test. -> 172.30.0.66 (Evil-server's IP)
