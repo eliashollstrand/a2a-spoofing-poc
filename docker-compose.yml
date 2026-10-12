@@ -1,0 +1,13 @@
+services:
+  legit-server:
+    build: ./legit-server
+    networks:
+      default:
+        aliases:
+          - agent.invoice.test  # Domain points at the legit-server
+
+  client:
+    build: ./client
+    depends_on:
+      - legit-server
+    restart: "no"

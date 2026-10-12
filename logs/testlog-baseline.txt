@@ -1,0 +1,7 @@
+legit-server-1  | Received task: 'Pay invoice #1337 to John Doe: 1,000,000 SEK to account SE12 3456 7890'
+client-1        | Fetching agent card from http://agent.invoice.test:8080/.well-known/agent-card.json
+client-1        | Discovered agent: Invoice Assistant
+client-1        | Card says endpoint is: http://agent.invoice.test:8080/invoice
+client-1        | Sending task there...
+client-1        | Response: {'handledBy': 'Legit Invoice Assistant', 'result': 'Processed invoice.'}
+client-1        | Task handled by: Legit Invoice Assistant
