@@ -1,0 +1,70 @@
+client-1  | Fetching agent card from https://agent.invoice.test:443/.well-known/agent-card.json
+client-1  | Traceback (most recent call last):
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connection.py", line 239, in _new_conn
+client-1  |     sock = connection.create_connection(
+client-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/util/connection.py", line 85, in create_connection
+client-1  |     raise err
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/util/connection.py", line 73, in create_connection
+client-1  |     sock.connect(sa)
+client-1  | ConnectionRefusedError: [Errno 111] Connection refused
+client-1  | 
+client-1  | The above exception was the direct cause of the following exception:
+client-1  | 
+client-1  | Traceback (most recent call last):
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 793, in urlopen
+client-1  |     response = self._make_request(
+client-1  |                ^^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 494, in _make_request
+client-1  |     raise new_e
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 470, in _make_request
+client-1  |     self._validate_conn(conn)
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 1125, in _validate_conn
+client-1  |     conn.connect()
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connection.py", line 827, in connect
+client-1  |     self.sock = sock = self._new_conn()
+client-1  |                        ^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connection.py", line 254, in _new_conn
+client-1  |     raise NewConnectionError(
+client-1  | urllib3.exceptions.NewConnectionError: HTTPSConnection(host='agent.invoice.test', port=443): Failed to establish a new connection: [Errno 111] Connection refused
+client-1  | 
+client-1  | The above exception was the direct cause of the following exception:
+client-1  | 
+client-1  | Traceback (most recent call last):
+client-1  |   File "/usr/local/lib/python3.12/site-packages/requests/adapters.py", line 696, in send
+client-1  |     resp = conn.urlopen(
+client-1  |            ^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/connectionpool.py", line 847, in urlopen
+client-1  |     retries = retries.increment(
+client-1  |               ^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/urllib3/util/retry.py", line 555, in increment
+client-1  |     raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+client-1  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client-1  | urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='agent.invoice.test', port=443): Max retries exceeded with url: /.well-known/agent-card.json (Caused by NewConnectionError("HTTPSConnection(host='agent.invoice.test', port=443): Failed to establish a new connection: [Errno 111] Connection refused"))
+client-1  | 
+client-1  | During handling of the above exception, another exception occurred:
+client-1  | 
+client-1  | Traceback (most recent call last):
+client-1  |   File "/app/client.py", line 43, in <module>
+client-1  |     main()
+client-1  |   File "/app/client.py", line 35, in main
+client-1  |     card = discover(TARGET)
+client-1  |            ^^^^^^^^^^^^^^^^
+client-1  |   File "/app/client.py", line 22, in discover
+client-1  |     response = requests.get(url, verify=VERIFY)
+client-1  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/requests/api.py", line 87, in get
+client-1  |     return request("get", url, params=params, **kwargs)
+client-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/requests/api.py", line 71, in request
+client-1  |     return session.request(method=method, url=url, **kwargs)
+client-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/requests/sessions.py", line 651, in request
+client-1  |     resp = self.send(prep, **send_kwargs)
+client-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/requests/sessions.py", line 784, in send
+client-1  |     r = adapter.send(request, **kwargs)
+client-1  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client-1  |   File "/usr/local/lib/python3.12/site-packages/requests/adapters.py", line 729, in send
+client-1  |     raise ConnectionError(e, request=request)
+client-1  | requests.exceptions.ConnectionError: HTTPSConnectionPool(host='agent.invoice.test', port=443): Max retries exceeded with url: /.well-known/agent-card.json (Caused by NewConnectionError("HTTPSConnection(host='agent.invoice.test', port=443): Failed to establish a new connection: [Errno 111] Connection refused"))

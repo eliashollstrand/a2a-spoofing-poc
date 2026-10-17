@@ -1,0 +1,23 @@
+services:
+  legit-server:
+    build: ./legit-server
+    volumes:
+      - ./certs:/certs
+    environment:
+      - USE_TLS=true
+    ports:
+      - "443:443"
+    networks:
+      default:
+        aliases:
+          - agent.invoice.test  # Domain points at the legit-server
+
+  client:
+    build: ./client
+    environment:
+      - USE_TLS=true
+    volumes:
+      - ./certs/server.crt:/certs/server.crt
+    depends_on:
+      - legit-server
+    restart: "no"

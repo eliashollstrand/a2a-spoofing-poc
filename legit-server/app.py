@@ -5,17 +5,28 @@
 """
 
 from flask import Flask, jsonify, request
-
+import os
+USE_TLS = os.getenv("USE_TLS", "false").lower() == "true"
 app = Flask(__name__)
 
-AGENT_CARD = {
-    "name": "Invoice Assistant",
-    "supportedInterfaces": [
-        {
-            "url": "http://agent.invoice.test:8080/invoice"
-        }
-    ],
-}
+if USE_TLS:
+    AGENT_CARD = {
+        "name": "Invoice Assistant",
+        "supportedInterfaces": [
+            {
+                "url": "https://agent.invoice.test:443/invoice"
+            }
+        ],
+    }
+else:
+    AGENT_CARD = {
+        "name": "Invoice Assistant",
+        "supportedInterfaces": [
+            {
+                "url": "http://agent.invoice.test:8080/invoice"
+            }
+        ],
+    }
 
 @app.get("/.well-known/agent-card.json")
 def agent_card():
@@ -34,4 +45,8 @@ def handle_task():
     })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080) # 0.0.0.0 so that the server can be reached from other docker containers
+    if USE_TLS:
+        ssl_context = ("/certs/server.crt", "/certs/server.key")
+        app.run(host="0.0.0.0", port=443, ssl_context=ssl_context)
+    else:
+        app.run(host="0.0.0.0", port=8080) # 0.0.0.0 so that the server can be reached from other docker containers
