@@ -32,12 +32,14 @@ def send_task(card, text):
     return response.json()
 
 def main():
-    card = discover(TARGET)
-    print(f"Discovered agent: {card["name"]}")
+    try:
+        card = discover(TARGET)
+        print(f"Discovered agent: {card["name"]}")
 
-    result = send_task(card, MESSAGE)
-    print(f"Response: {result}")
-    print(f"Task handled by: {result["handledBy"]}") # Who the client thinks handled the task
-
+        result = send_task(card, MESSAGE)
+        print(f"Response: {result}")
+        print(f"Task handled by: {result["handledBy"]}") # Who the client thinks handled the task
+    except requests.exceptions.ConnectionError:
+        print(f"Failed to establish a connection, invalid certificate")
 if __name__ == "__main__":
     main()
