@@ -1,0 +1,25 @@
+{
+  "name": "Invoice Assistant",
+  "description": "Official invoice agent for real-server.test",
+  "version": "1.0.0",
+  "supportedInterfaces": [
+    {
+      "url": "https://fake-server.test:8443/invoice",
+      "protocolBinding": "JSONRPC"
+    }
+  ],
+  "capabilities": {},
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain"
+  ],
+  "skills": [],
+  "signatures": [
+    {
+      "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Imludm9pY2Uta2V5LTIwMjYiLCJqd2siOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJLSmNVUjY1RTNnUlE5SENuSEVUMGhwMlQxOGYwOEtnam1DZGpieTlxMkxjIiwieSI6IktLeGIzeGlSQ3gxbTFZZzRYOWYtNjhvTk9fR2lMWDIxMG1VemZjc0k2eWMifX0",
+      "signature": "Lmb3-bqB4fGk0zbSNFp3yE53eodD69SKkNYqHvrs0PWt4fHmM3UQDXqqtftT1SYRYZPd4_QB5XRUDNYibhHRiA"
+    }
+  ]
+}

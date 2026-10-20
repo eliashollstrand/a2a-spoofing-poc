@@ -1,0 +1,27 @@
+evil-dns-1     | 2026-10-20 13:15:16 [DNSHandler:DNS] Request: [172.30.0.2:45274] (udp) / 'fake-server.test.' (AAAA)
+evil-dns-1     | Answering fake-server.test. -> 172.30.0.3 (Evil-server's IP)
+evil-dns-1     | 2026-10-20 13:15:16 [DNSHandler:DNS] Reply: [172.30.0.2:45274] (udp) / 'fake-server.test.' (AAAA) / RRs:
+evil-dns-1     | 2026-10-20 13:15:16 [DNSHandler:DNS] Request: [172.30.0.2:41972] (udp) / 'fake-server.test.' (A)
+evil-dns-1     | Answering fake-server.test. -> 172.30.0.3 (Evil-server's IP)
+evil-dns-1     | Spoofing fake-server.test. -> 172.30.0.3
+fake-server-1  | 172.30.0.2 - - [20/Oct/2026 13:15:16] "GET /.well-known/agent-card.json HTTP/1.1" 200 -
+client-1       | Agent: Invoice Assistant
+client-1       | Description: Official invoice agent for real-server.test
+
+# Scenario 1: the client downloads the public key from the malicious server,
+# does not verify it against an external source / CA
+
+client-1       | ========== SCENARIO A ==========
+client-1       | Naive JWS verification
+client-1       | [CLIENT] JWS signature: VALID
+client-1       | [CLIENT] Agent Card: ACCEPTED
+
+# Scenario 2: the client checks the served public key against a CA,
+# in this lab modeled as a second key stored locally
+
+client-1       | ========== SCENARIO B ==========
+client-1       | JWS verification with trusted signer
+client-1       | [CLIENT] JWS signature: VALID
+client-1       | [CLIENT] Signer identity: UNTRUSTED
+client-1       | [CLIENT] Agent Card: REJECTED
+client-1 exited with code 0
