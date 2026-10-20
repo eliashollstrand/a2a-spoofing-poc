@@ -141,7 +141,7 @@ client-1  | Task handled by: Legit Invoice Assistant
 ```
 
 ### With an attacker on TLS
-    docker compose -f docker-compose.attack.yml up --build
+    docker compose -f docker-compose.attack-tls.yml up --build
 Now that the client have the public certificate for the domain agent.invoice.test, it will verify the connection and since evil-server does not hold the private key. The Client will reject the connection.
 ```
 client-1  | Fetching agent card from https://agent.invoice.test:443/.well-known/agent-card.json
