@@ -1,61 +1,67 @@
-# Att göra härnäst
-
-### Status
-- **Klart (Del 1):** En fungerande A2A-uppsättning i Docker, dvs en legitim agent (`legit-server`) som publicerar sitt agent card och tar emot uppgifter, och en klient (`client`) som gör discovery och skickar en uppgift (i det här fallet en betalning på en faktura). Ovanpå det en attack (`evil-dns` och `evil-server`) som visar att klienten kan luras att skicka känslig data till angriparen i stället för till den äkta agenten genom DNS-spoofing. Verifierat med loggar (se *Testing documentation*).
-- **Kvar:** motåtgärderna (del 2a + 2b), rapporten, allas individuella bidrag, och slides till presentationen.
-
-Viktigt att nämna är att del 1 bara visar att sårbarheten finns. Själva poängen med projektet är del 2: att visa vilka motåtgärder som faktiskt hjälper, och framför allt var A2A brister (protokollet specificerar inte hur en klient ska avgöra att signeringsnyckeln faktiskt tillhör rätt part).
-
-**Deadline:** repo-länk + `submission`-tagg i Canvas senast 20 okt.
-
-### Att bygga (Motåtgärder, Del 2)
-- **2a: Lägg till TLS**
-    Här är målet att visa att om den legitima agenten körs över HTTPS och klienten verifierar certifikatet, så misslyckas samma DNS-spoof-attack. Angriparens server får fortfarande trafiken omdirigerad till sig (dvs DNS-spoofen fungerar), men den kan inte visa upp ett giltigt certifikat för agent.invoice.test. Klienten upptäcker att certifikatet inte går att lita på och avbryter vid TLS-handskakningen, och därmed innan den skickar någon känslig data. Återanvänd attack-uppsättningen från del 1 och visa i loggen att klienten nu får ett certifikatfel i stället för att nå "Captured victim data". Skriv output till `logs/testlog-tls.txt`.
-
-- **2b: Signerat agent card**
-    Det är här vi påvisar bristen i protokollet. Angriparen har nu en egen domän med eget giltigt cert, så TLS stoppar ingenting. Om klienten leds till denna domän kan den hämta ett förfalskat card från evil-server som om det vore en vanlig agent.
-
-    Legit-agenten signerar sitt card med sin privata nyckel (dess sätt att bevisa att "detta kommer från mig"). Angriparen kan inte förfalska den signaturen. Men här beror det på hur klienten kontrollerar signaturen. Vi kan köra två varianter mot evil-server:
-
-    - **Naiv:** lita på nyckeln som ligger i cardet. Angriparen la dit sin egen och signerade med den, vilket gör att klienten luras och att data skickas.
-    - **Korrekt:** lita bara på legit-agentens publika nyckel, given i förväg och sparad lokalt. Angriparen saknar legit-agentens privata nyckel och kan därför inte producera en giltig signatur, vilket gör att verifieringen av det förfalskade cardet misslyckas och ingen data skickas.
-
-Alltså visar vi att det inte räcker för protokollet att "ha signaturer", då en naiv implementation kan luras trots att TLS ger grönt ljus. Äkthet kräver att klienten i förväg vet vilken nyckel som är rätt, och A2A gör både signeringen och den förankringen valfri. Det är den här luckan vi påvisar här. Skriv output till `logs/testlog-signed.txt`.
-
-### Rapport (denna README)
-- Fyll **Testing documentation** med utdrag från loggarna från 2a och 2b.
-- Skriv analys av motåtgärderna. Varför TLS ensamt inte räcker, varför det inte heller räcker att bara signera cardet (klienten måste känna till den äkta agentens nyckel i förväg), och vilket försvar som löser vilket problem, dvs att TLS skyddar transporten (rätt domän) och att det signerade cardet skyddar identiteten (rätt agent).
-- Var och en behöver också skriva ~0,5 sida med sina bidrag i en egen `<namn>.md` fil under `contributions/`.
-
-### Seminarium
-Slides: Problem → Live-demo (Del 1) → De två motåtgärderna (Del 2a och 2b) → Slutsats.
-
-### Lämna in
-När allt är klart: klistra in repo-länken i Canvas.
-
----
-
 # Agent Card Spoofing in the A2A Protocol
 
 A security analysis of agent discovery in the A2A protocol: how a client can be tricked into delegating tasks to a forged agent, and which countermeasures prevent this.
 
 Project in the course DD2391/DD2394/DD2395 Computer Security at KTH.
 
+## Introduction
+
+Agent-to-agent (A2A) is a protocol that lets AI agents discover
+one another and delegate tasks. Before a client can use a remote agent, it fetches
+that agent's *agent card* - a small JSON document, served at a standardised
+well-known URL, that describes the agent and, crucially, the endpoint tasks should
+be sent to.
+
+This project examines a weakness in this so called discovery step: A2A standardises how a
+client *fetches* an agent card, but not how it verifies that the card and the
+agent behind it is genuine. A client that trusts the card it receives can be
+made to send its task, and any sensitive data in it, to an attacker instead of the
+intended agent.
+
+We study the attack and two countermeasures, and then a second, compounding weakness:
+
+- **Part 1 - The attack.** A minimal client and legitimate agent, plus an
+  attacker that hijacks the client's DNS and serves a forged agent card. The client
+  sends a sensitive task (a payment instruction) to the attacker while believing it
+  reached the real agent, which never sees the traffic.
+- **Part 2a — TLS.** Running the legitimate agent over HTTPS stops the Part 1
+  attack. The attacker is still reached via DNS but cannot present a valid
+  certificate for the domain, so the client aborts at the TLS handshake. This
+  secures the *transport* (the right domain), but only against an attacker on that
+  same domain.
+- **Part 2b — Signed agent cards.** When the attacker instead uses its *own* domain
+  with its own valid certificate, TLS no longer helps. Signing the card is necessary
+  but not sufficient. A client that trusts the key inside the card is still
+  fooled, and only a client that checks the signature against the legitimate agent's
+  key, known in advance, rejects the forgery. This secures *identity* (the right
+  agent), independent of what transport method is used.
+- **Part 2c — Unbounded card caching.** A separate weakness in how long a forged card
+  survives. A2A lets a client cache an agent card for a duration taken from the card
+  itself, and does not require any upper bound. An attacker can therefore serve a
+  forged card with a very long cache lifetime, so the client keeps contacting the
+  malicious server long after the original attack has stopped.
+
+The core finding is that A2A leaves both these protections optional and, for signing, does
+not specify how a client should establish that a signing key actually belongs to the
+intended agent, and that it places no upper bound on how long a (possibly forged) card
+is trusted. These are the gaps this project demonstrates.
+
 ## Problem statement
 
 A2A discovery standardises how a client fetches an agent card from a domain, but establishes no mandatory, verifiable connection between an agent's real identity and the endpoint that serves its card.
 
 - TLS authenticates the **domain**, not the **agent**.
-- Agent card signatures are **optional**, and even when used the protocol does not define how a client establishes trust in the the key that was used for signing.
+- Agent card signatures are **optional**, and even when used the protocol does not define how a client establishes trust in the key that was used for signing.
+- The protocol places **no upper bound** on how long a client may cache an agent card. The lifetime comes from the card itself so a forged card can keep a client pointed at a malicious server even after the original attack has stopped.
 
 Consequently, the client has no guaranteed way specified by the protocol to know if it is delegating its task to the genuine agent rather than to an impostor.
 
 ## Threat model & scope
 
-- **Assumption:** the attacker can make the client reach the wrong server (e.g. by spoofing DNS).
-- **Scope:** a DNS-spoofing PoC, TLS as countermeasure, signed card as a countermeasure.
+- **Assumption:** The attacker can make the client reach the wrong server (e.g. by spoofing DNS).
+- **Scope:** A DNS-spoofing PoC, two countermeasures (TLS and a signed agent card), and a second weakness in unbounded card caching.
 
-We fake the attacker's DNS control using Docker Compose. On a real network this would be achieved by e.g. ARP spoofing. How the attacker reaches that position is out of our scope. We only focus on what happens afterwards, which is where we think the weakness in the protocol lies.
+We fake the attacker's DNS control using Docker Compose. On a real network this would be achieved by e.g. ARP spoofing. How the attacker reaches that position is out of our scope. We only focus on what happens afterwards, which is where we think the weakness in the protocol lies. We have not used the official A2A SDK but a simplified version based on the official specifications.
 
 ## Project documentation
 
