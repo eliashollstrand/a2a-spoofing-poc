@@ -176,7 +176,6 @@ Descriptions of each member's contribution is in [`contributions/`](contribution
 - Elias - [`contributions/elias.md`](contributions/elias.md)
 - Måns - [`contributions/måns.md`](contributions/måns.md)
 - Felix - [`contributions/felix.md`](contributions/felix.md)
-- Nicholas - [`contributions/nicholas.md`](contributions/nicholas.md)
 
 ## References
 
