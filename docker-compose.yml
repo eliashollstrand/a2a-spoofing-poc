@@ -1,7 +1,7 @@
 services:
   legit-server:
     build: ./legit-server
-    enviroment:
+    environment:
       - USE_TLS=false
     networks:
       default:

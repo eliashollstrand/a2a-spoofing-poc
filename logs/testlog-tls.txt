@@ -1,2 +1,6 @@
 client-1  | Fetching agent card from https://agent.invoice.test:443/.well-known/agent-card.json
-client-1  | Failed to establish a connection, invalid certificate
+client-1  | Discovered agent: Invoice Assistant
+client-1  | Card says endpoint is: https://agent.invoice.test:443/invoice
+client-1  | Sending task there...
+client-1  | Response: {'handledBy': 'Legit Invoice Assistant', 'result': 'Processed invoice.'}
+client-1  | Task handled by: Legit Invoice Assistant

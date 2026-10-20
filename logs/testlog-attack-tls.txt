@@ -1,0 +1,2 @@
+client-1  | Fetching agent card from https://agent.invoice.test:443/.well-known/agent-card.json
+client-1  | Failed to establish a connection, invalid certificate
