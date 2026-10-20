@@ -67,17 +67,7 @@ We fake the attacker's DNS control using Docker Compose. On a real network this 
 
 ### Attack architecture
 
-```mermaid
-flowchart LR
-    C[Client]
-    C -->|1. agent.invoice.test ?| EVILDNS[Evil DNS]
-    EVILDNS -->|2. Reply: Evil Server IP| C
-    C -->|3. GET /.well-known/agent-card.json| EVIL[Evil Server]
-    EVIL -->|4. Forged card| C
-    C -->|5. POST task| EVIL
-    LEGIT[Legit Server]
-    EVIL -.->|Data should have gone here| LEGIT
-```
+![Attack architecture](docs/attack-architecture.png)
 
 ### Components
 - `legit-server/` - A legitimate A2A agent, which serves the agent card and task endpoint
