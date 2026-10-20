@@ -133,6 +133,26 @@ client-1       | Task handled by: Legit Invoice Assistant
 # Legit server stays silent since it never saw the request
 ```
 
+### Part 2a - TLS implementation on DOMAIN
+### Without an attacker on TLS
+    docker compose -f docker-compose.tls.yml
+When no attacker is present, the client discovers the real agent and the task reaches
+```
+client-1  | Fetching agent card from https://agent.invoice.test:443/.well-known/agent-card.json
+client-1  | Discovered agent: Invoice Assistant
+client-1  | Card says endpoint is: https://agent.invoice.test:443/invoice
+client-1  | Sending task there...
+client-1  | Response: {'handledBy': 'Legit Invoice Assistant', 'result': 'Processed invoice.'}
+client-1  | Task handled by: Legit Invoice Assistant
+```
+
+### With an attacker on TLS
+    docker compose -f docker-compose.attack-tls.yml up --build
+Now that the client have the public certificate for the domain agent.invoice.test, it will verify the connection and since evil-server does not hold the private key. The Client will reject the connection.
+```
+client-1  | Fetching agent card from https://agent.invoice.test:443/.well-known/agent-card.json
+client-1  | Failed to establish a connection, invalid certificate
+```
 ## Group contributions
 
 Descriptions of each member's contribution is in [`contributions/`](contributions/):
