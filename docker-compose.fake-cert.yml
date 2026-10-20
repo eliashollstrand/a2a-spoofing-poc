@@ -1,0 +1,36 @@
+services:
+  fake-server:
+    build: ./fake-cert-server
+    volumes:
+      - ./certs:/app/certs:ro
+    networks:
+      labnet:
+        ipv4_address: 172.30.0.3
+
+  evil-dns:
+    build: ./evil-dns
+    environment:
+      SPOOF_IP: "172.30.0.3"
+    networks:
+      labnet:
+        ipv4_address: 172.30.0.4
+
+  client:
+    build: ./fake-cert-client
+    volumes:
+      - ./certs:/app/certs:ro
+    depends_on:
+      - fake-server
+      - evil-dns
+    dns:
+      - 172.30.0.4
+    environment:
+      NO_PROXY: fake-server.test,localhost,127.0.0.1
+    networks:
+      - labnet
+
+networks:
+  labnet:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
