@@ -128,7 +128,7 @@ client-1       | Task handled by: Legit Invoice Assistant
 ```
 
 ### Part 2a - TLS implementation on DOMAIN
-### without an attacker on TLS
+### Without an attacker on TLS
     docker compose -f docker-compose.tls.yml
 When no attacker is present, the client discovers the real agent and the task reaches
 ```
